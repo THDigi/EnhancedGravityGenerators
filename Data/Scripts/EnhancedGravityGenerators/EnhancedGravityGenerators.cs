@@ -87,7 +87,7 @@ namespace Digi.EnhancedGravityGenerators
                     Init();
                 }
 
-                if(++skip > SKIP_SCAN)
+                if(++skip >= SKIP_SCAN)
                 {
                     skip = 0;
                     ents.Clear();
@@ -101,7 +101,7 @@ namespace Digi.EnhancedGravityGenerators
                     ents.Clear();
                 }
 
-                if(++skipPlanets % SKIP_PLANETS == 0)
+                if(++skipPlanets >= SKIP_PLANETS)
                 {
                     skipPlanets = 0;
                     planets.Clear();
@@ -132,12 +132,10 @@ namespace Digi.EnhancedGravityGenerators
 
     public class GravityGeneratorBlock : MyGameLogicComponent
     {
-        private MyObjectBuilder_EntityBase objectBuilder;
         private GravityGeneratorLogic handle = null;
 
         public override void Init(MyObjectBuilder_EntityBase objectBuilder)
         {
-            this.objectBuilder = objectBuilder;
             Entity.NeedsUpdate |= MyEntityUpdateEnum.EACH_FRAME;
         }
 
@@ -162,12 +160,11 @@ namespace Digi.EnhancedGravityGenerators
         public override void Close()
         {
             handle = null;
-            objectBuilder = null;
         }
 
         public override MyObjectBuilder_EntityBase GetObjectBuilder(bool copy = false)
         {
-            return copy ? (MyObjectBuilder_EntityBase)objectBuilder.Clone() : objectBuilder;
+            return Entity.GetObjectBuilder(copy);
         }
     }
 
@@ -231,7 +228,7 @@ namespace Digi.EnhancedGravityGenerators
                         naturalDir += planetDir * gravComp.GetGravityMultiplier(point);
                     }
                 }
-
+                
                 naturalForce = naturalDir.Length();
             }
 
@@ -271,7 +268,7 @@ namespace Digi.EnhancedGravityGenerators
             {
                 var gg = (block as IMyGravityGeneratorSphere);
                 spherical = true;
-                gravity = gg.Gravity / EnhancedGravityGenerators.G; // HACK spherical grav gens are 0-9.81 and flat grav gens are 0-1
+                gravity = gg.Gravity / EnhancedGravityGenerators.G; // TODO use GravityAcceleration / G when that gets to stable
                 radiusSq = gg.Radius;
                 radiusSq = radiusSq * radiusSq;
             }
@@ -279,9 +276,9 @@ namespace Digi.EnhancedGravityGenerators
             {
                 var gg = (block as IMyGravityGenerator);
                 spherical = false;
-                gravity = gg.Gravity;
+                gravity = gg.Gravity; // TODO use GravityAcceleration / G when that gets to stable
                 rangeBox = new MyOrientedBoundingBoxD(gg.WorldMatrix);
-                rangeBox.HalfExtent = new Vector3D(gg.FieldWidth / 2, gg.FieldHeight / 2, gg.FieldDepth / 2);
+                rangeBox.HalfExtent = new Vector3D(gg.FieldWidth / 2, gg.FieldHeight / 2, gg.FieldDepth / 2); // TODO use .FieldSize when it gets to stable
             }
 
             if(ents != null)
@@ -328,7 +325,7 @@ namespace Digi.EnhancedGravityGenerators
 
         public bool Enabled()
         {
-            return block.IsWorking && (affectSmallShips || affectLargeShips);
+            return ((IMyTerminalBlock)block).IsWorking && (affectSmallShips || affectLargeShips);
         }
 
         public void NameChanged(IMyTerminalBlock not_used)
