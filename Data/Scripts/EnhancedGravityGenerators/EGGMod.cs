@@ -9,7 +9,7 @@ using VRage.ModAPI;
 // TODO: counterpush should also affect mass blocks
 // TODO: a way to enforce counterpush server side
 // TODO: block-box resolution field checking? ( GetEntitiesIn*() instead of GetTopMostEntitiesIn*() )
-// TODO: parallel just like sensor does it
+// TODO: parallel just like sensor does it?
 // TODO: implement terminal controls, saving, synching...
 
 namespace Digi.EnhancedGravityGenerators
@@ -19,25 +19,20 @@ namespace Digi.EnhancedGravityGenerators
     {
         public static EGGMod Instance = null;
 
-        private int skipPlanets = SKIP_PLANETS;
+        public readonly List<MyEntity> Entities = new List<MyEntity>();
+        public readonly List<MyPlanet> Planets = new List<MyPlanet>();
 
-        public List<MyEntity> Entities = new List<MyEntity>();
-        public List<MyPlanet> Planets = new List<MyPlanet>();
         private Func<IMyEntity, bool> entityFilterCached;
+        private int skipPlanets = SKIP_PLANETS;
 
         private const int SKIP_PLANETS = 60 * 10;
 
         public override void LoadData()
         {
             Instance = this;
-            Log.SetUp("Enhanced Gravity Generators", 464877997, "EnhancedGravityGenerators");
+            Log.ModName = "Enhanced Gravity Generators";
 
             entityFilterCached = new Func<IMyEntity, bool>(EntityFilter);
-        }
-
-        public override void BeforeStart()
-        {
-            Log.Init();
         }
 
         protected override void UnloadData()
