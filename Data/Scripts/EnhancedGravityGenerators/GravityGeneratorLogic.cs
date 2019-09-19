@@ -13,81 +13,8 @@ using VRage.ModAPI;
 using VRage.ObjectBuilders;
 using VRageMath;
 
-// TODO: counterpush should also affect mass blocks
-// TODO: a way to enforce counterpush server side
-// TODO: block-box resolution field checking? ( GetEntitiesIn*() instead of GetTopMostEntitiesIn*() )
-// TODO: parallel just like sensor does it
-// TODO: implement terminal controls, saving, synching...
-
 namespace Digi.EnhancedGravityGenerators
 {
-    [MySessionComponentDescriptor(MyUpdateOrder.BeforeSimulation)]
-    public class EnhancedGravityGenerators : MySessionComponentBase
-    {
-        public static EnhancedGravityGenerators Instance = null;
-
-        private bool init = false;
-        private int skipPlanets = SKIP_PLANETS;
-
-        public List<MyPlanet> Planets = new List<MyPlanet>();
-        public List<MyEntity> Entities = new List<MyEntity>();
-        private HashSet<IMyEntity> EntitiesModAPI = new HashSet<IMyEntity>();
-
-        private const int SKIP_PLANETS = 60 * 10;
-
-        public override void LoadData()
-        {
-            Instance = this;
-            Log.SetUp("Enhanced Gravity Generators", 464877997, "EnhancedGravityGenerators");
-        }
-
-        protected override void UnloadData()
-        {
-            Instance = null;
-            init = false;
-            Planets.Clear();
-            Log.Close();
-        }
-
-        public override void UpdateBeforeSimulation()
-        {
-            try
-            {
-                if(!init)
-                {
-                    if(MyAPIGateway.Session == null)
-                        return;
-
-                    Log.Init();
-                    init = true;
-                }
-
-                if(++skipPlanets >= SKIP_PLANETS)
-                {
-                    skipPlanets = 0;
-                    Planets.Clear();
-                    Entities.Clear();
-
-                    MyAPIGateway.Entities.GetEntities(EntitiesModAPI, e =>
-                    {
-                        var p = e as MyPlanet;
-
-                        if(p != null)
-                            Planets.Add(p);
-
-                        return false; // no reason to add to the list
-                    });
-
-                    Entities.Clear();
-                }
-            }
-            catch(Exception e)
-            {
-                Log.Error(e);
-            }
-        }
-    }
-
     [MyEntityComponentDescriptor(typeof(MyObjectBuilder_GravityGenerator), false)]
     public class GravityGeneratorFlat : GravityGeneratorBase { }
 
@@ -201,7 +128,7 @@ namespace Digi.EnhancedGravityGenerators
                 {
                     var sphere = new BoundingSphereD(gravGenPos, sphericalGravGen.Radius);
 
-                    var ents = EnhancedGravityGenerators.Instance.Entities;
+                    var ents = EGGMod.Instance.Entities;
                     ents.Clear();
                     gridsInRange.Clear();
                     MyGamePruningStructure.GetAllTopMostEntitiesInSphere(ref sphere, ents, MyEntityQueryType.Dynamic);
@@ -225,14 +152,14 @@ namespace Digi.EnhancedGravityGenerators
                 }
                 else
                 {
-                    var gg = (IMyGravityGenerator)block;
-                    gravGenAccel = gg.GravityAcceleration;
-                    var rangeBox = new MyOrientedBoundingBoxD(gg.WorldMatrix);
-                    rangeBox.HalfExtent = gg.FieldSize / 2;
+                    var flatGravGen = (IMyGravityGenerator)block;
+                    gravGenAccel = flatGravGen.GravityAcceleration;
+                    var rangeBox = new MyOrientedBoundingBoxD(flatGravGen.WorldMatrix);
+                    rangeBox.HalfExtent = flatGravGen.FieldSize / 2;
 
                     var worldBB = new BoundingBoxD(gravGenPos - rangeBox.HalfExtent, gravGenPos + rangeBox.HalfExtent);
 
-                    var ents = EnhancedGravityGenerators.Instance.Entities;
+                    var ents = EGGMod.Instance.Entities;
                     ents.Clear();
                     gridsInRange.Clear();
                     MyGamePruningStructure.GetTopMostEntitiesInBox(ref worldBB, ents, MyEntityQueryType.Dynamic);
@@ -256,11 +183,11 @@ namespace Digi.EnhancedGravityGenerators
                 }
 
                 // adjust gravity in relation to nearby planets just like the vanilla gravity generators are affected
-                if(EnhancedGravityGenerators.Instance.Planets.Count > 0)
+                if(EGGMod.Instance.Planets.Count > 0)
                 {
                     Vector3 naturalDir = Vector3.Zero;
 
-                    foreach(var planet in EnhancedGravityGenerators.Instance.Planets)
+                    foreach(var planet in EGGMod.Instance.Planets)
                     {
                         if(planet.Closed)
                             continue;
