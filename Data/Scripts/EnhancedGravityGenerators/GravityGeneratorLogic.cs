@@ -157,7 +157,7 @@ namespace Digi.EnhancedGravityGenerators
                     var rangeBox = new MyOrientedBoundingBoxD(flatGravGen.WorldMatrix);
                     rangeBox.HalfExtent = flatGravGen.FieldSize / 2;
 
-                    var worldBB = new BoundingBoxD(gravGenPos - rangeBox.HalfExtent, gravGenPos + rangeBox.HalfExtent);
+                    var worldBB = rangeBox.GetAABB();
 
                     var ents = EGGMod.Instance.Entities;
                     ents.Clear();
