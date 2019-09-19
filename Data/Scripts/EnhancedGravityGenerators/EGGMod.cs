@@ -19,12 +19,11 @@ namespace Digi.EnhancedGravityGenerators
     {
         public static EGGMod Instance = null;
 
-        private bool init = false;
         private int skipPlanets = SKIP_PLANETS;
 
-        public List<MyPlanet> Planets = new List<MyPlanet>();
         public List<MyEntity> Entities = new List<MyEntity>();
-        private HashSet<IMyEntity> EntitiesModAPI = new HashSet<IMyEntity>();
+        public List<MyPlanet> Planets = new List<MyPlanet>();
+        private Func<IMyEntity, bool> entityFilterCached;
 
         private const int SKIP_PLANETS = 60 * 10;
 
@@ -32,12 +31,18 @@ namespace Digi.EnhancedGravityGenerators
         {
             Instance = this;
             Log.SetUp("Enhanced Gravity Generators", 464877997, "EnhancedGravityGenerators");
+
+            entityFilterCached = new Func<IMyEntity, bool>(EntityFilter);
+        }
+
+        public override void BeforeStart()
+        {
+            Log.Init();
         }
 
         protected override void UnloadData()
         {
             Instance = null;
-            init = false;
             Planets.Clear();
             Log.Close();
         }
@@ -46,38 +51,26 @@ namespace Digi.EnhancedGravityGenerators
         {
             try
             {
-                if(!init)
-                {
-                    if(MyAPIGateway.Session == null)
-                        return;
-
-                    Log.Init();
-                    init = true;
-                }
-
                 if(++skipPlanets >= SKIP_PLANETS)
                 {
                     skipPlanets = 0;
-                    Planets.Clear();
-                    Entities.Clear();
-
-                    MyAPIGateway.Entities.GetEntities(EntitiesModAPI, e =>
-                    {
-                        var p = e as MyPlanet;
-
-                        if(p != null)
-                            Planets.Add(p);
-
-                        return false; // no reason to add to the list
-                    });
-
-                    Entities.Clear();
+                    MyAPIGateway.Entities.GetEntities(null, entityFilterCached);
                 }
             }
             catch(Exception e)
             {
                 Log.Error(e);
             }
+        }
+
+        private bool EntityFilter(IMyEntity ent)
+        {
+            var p = ent as MyPlanet;
+
+            if(p != null)
+                Planets.Add(p);
+
+            return false; // don't add to the list, it's null
         }
     }
 }
